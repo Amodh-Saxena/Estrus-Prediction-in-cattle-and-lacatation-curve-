@@ -1,0 +1,1102 @@
+{
+  "generated_at_utc": "2026-11-02T20:14:37.079284+00:00",
+  "code_commit": "working-tree",
+  "database_sha256": "290730ba08851104f7d11a88200e5a1f65c4ed194b134c11d023f16886becdfa",
+  "source_csv_sha256": {
+    "data/cows.csv": "48708393a649557fdbf0e97eb6c3e8b981da614c0f3b010571727f1d2e772892",
+    "data/daily.csv": "0c4233e1f9610afe23a71655c8a3e3a27873385946dda74900ab78f902b45a02",
+    "data/inseminations.csv": "be94a68b6a394ae22af1ffc49378a88e0935e2489132e985a2d6e3f1c1356aee",
+    "synthetic_daily_10cows.csv": "0e46fec405eb50a62eedfc08ab3a0356397a7430511d3e4015a9b376783a8cdc",
+    "synthetic_hourly_10cows.csv": "10984f1643031e2ef024218c0e01118506ac98394a084e60b02d12f6dc3ba727",
+    "synthetic_imu_clips_441.csv": "52358732750fa1e6d74e0a2641ddea7630e4ede18b712c16c9f7ba88de7412fa",
+    "out/estrus_predictions.csv": "6657d422cde63e230d73d37aa75d09e1260feb71d677561237a7dc42ccf134d7"
+  },
+  "data_contract": {
+    "database": "data\\synthetic_cattle.db",
+    "prd_tables": [
+      "data/cows.csv",
+      "data/daily.csv",
+      "data/inseminations.csv"
+    ],
+    "demo_10cow_csvs": [
+      "synthetic_daily_10cows.csv",
+      "synthetic_hourly_10cows.csv",
+      "synthetic_imu_clips_441.csv",
+      "out/estrus_predictions.csv"
+    ],
+    "real_collar_dir": "db-cow-walking-main",
+    "synthetic_rows_flagged": true
+  },
+  "leakage_tests": {
+    "no_cow_overlap": true,
+    "causal_baselines": true,
+    "baseline_excludes_today": true,
+    "parity_curve_train_only": true,
+    "all_passed": true
+  },
+  "models": {
+    "estrus": {
+      "pr_auc": 0.9550381919342896,
+      "precision": 0.9730769230769231,
+      "recall": 0.8547297297297297,
+      "f1": 0.9100719424460432,
+      "false_alerts_per_100_cow_days": 0.04009163802978236,
+      "normal_heat_recall": 0.9753086419753086,
+      "silent_heat_recall": 0.3018867924528302,
+      "source": "synthetic PRD 300-cow daily.csv + cows.csv",
+      "n_cows": 300,
+      "validation_threshold": 0.74,
+      "test_rows": 17460,
+      "cv_5fold": {
+        "f1_mean": 0.9145803619840411,
+        "f1_std": 0.014712041114525388,
+        "pr_auc_mean": 0.9600290620329568,
+        "pr_auc_std": 0.009317514076034752
+      },
+      "bootstrap_95ci": {
+        "f1": {
+          "mean": 0.9106013134111728,
+          "std": 0.013111672541797625,
+          "ci95_low": 0.8833913043478261,
+          "ci95_high": 0.9353109479410272
+        },
+        "pr_auc": {
+          "mean": 0.9553744131640188,
+          "std": 0.009572026008591345,
+          "ci95_low": 0.9342190215624735,
+          "ci95_high": 0.9725658710307101
+        }
+      },
+      "baselines": {
+        "balanced_logistic_regression": {
+          "pr_auc": 0.9434299207575464,
+          "precision": 0.8929765886287625,
+          "recall": 0.902027027027027,
+          "f1": 0.8974789915966387,
+          "false_alerts_per_100_cow_days": 0.18327605956471935,
+          "validation_threshold": 0.95
+        },
+        "activity_ratio_rule": {
+          "rule_threshold": 1.26,
+          "precision": 0.8614864864864865,
+          "recall": 0.8614864864864865,
+          "f1": 0.8614864864864865,
+          "false_alerts_per_100_cow_days": 0.23482245131729668
+        }
+      },
+      "acceptance": {
+        "f1_target": 0.85,
+        "pr_auc_target": 0.9,
+        "beats_activity_rule": true,
+        "acceptance_met": true
+      },
+      "is_synthetic": 1,
+      "demo_10cow": {
+        "source": "synthetic_daily_10cows.csv + synthetic_hourly_10cows.csv + data/synthetic_cattle.db + out/estrus_predictions.csv",
+        "n_cows": 10,
+        "split_cows": {
+          "train": [
+            "cow_02",
+            "cow_04",
+            "cow_05",
+            "cow_07",
+            "cow_08",
+            "cow_10"
+          ],
+          "validation": [
+            "cow_01",
+            "cow_09"
+          ],
+          "test": [
+            "cow_03",
+            "cow_06"
+          ]
+        },
+        "daily_model": {
+          "pr_auc": 0.9294117647058824,
+          "precision": 0.9285714285714286,
+          "recall": 0.8666666666666667,
+          "f1": 0.896551724137931,
+          "false_alerts_per_100_cow_days": 0.5208333333333334,
+          "validation_threshold": 0.08,
+          "test_rows": 192
+        },
+        "hourly_and_prediction_enriched_model": {
+          "pr_auc": 0.9815204678362573,
+          "precision": 0.9333333333333333,
+          "recall": 0.9333333333333333,
+          "f1": 0.9333333333333333,
+          "false_alerts_per_100_cow_days": 0.5208333333333334,
+          "validation_threshold": 0.05,
+          "features_used": [
+            "activity_index_ratio",
+            "rumination_min_ratio",
+            "distance_m_ratio",
+            "head_temp_c_ratio",
+            "activity_index_z",
+            "rumination_min_z",
+            "distance_m_z",
+            "head_temp_c_z",
+            "activity_index_z_lag1",
+            "rumination_min_z_lag1",
+            "distance_m_z_lag1",
+            "head_temp_c_z_lag1",
+            "act_z_roll3max",
+            "days_since_alert",
+            "dim",
+            "parity",
+            "walking_frac_ratio",
+            "walking_frac_z",
+            "walking_frac_z_lag1",
+            "lying_frac_ratio",
+            "lying_frac_z",
+            "walking_to_lying_ratio",
+            "hourly_act_max",
+            "hourly_act_std",
+            "hourly_mounting_sum",
+            "hourly_proximity_max",
+            "hourly_walking_max",
+            "hourly_walking_to_lying_max",
+            "hourly_grazing_min",
+            "hourly_lying_min",
+            "hourly_temp_max",
+            "collar_walking_clip_frac",
+            "collar_grazing_clip_frac",
+            "collar_resting_clip_frac",
+            "collar_walk_acc_mag_mean",
+            "collar_walk_dom_freq_hz",
+            "collar_walk_gyro_std",
+            "prev_stage_p_estrus_lag1"
+          ],
+          "days_to_next_heat_mae_days": 3.216883059256857
+        },
+        "is_synthetic": 1
+      },
+      "split_cows_count": {
+        "train": 180,
+        "validation": 60,
+        "test": 60
+      },
+      "data4_smid_estrus_behaviour": {
+        "available": true,
+        "dataset": "Smid et al. (2021/2024) Dairy Cow Estrus Behaviour - Indoor Freestall vs Outdoor Pack",
+        "location": "UBC Dairy Education & Research Centre, Agassiz, BC, Canada",
+        "n_raw_events": 102,
+        "n_sas_valid_events": 94,
+        "n_unique_cows": 45,
+        "output_csv": "data\\real_data4_smid_estrus.csv",
+        "estrus_duration_regressor_5fold_cv": {
+          "mae_hours": 1.555,
+          "r2_score": 0.8391,
+          "mean_true_duration_h": 11.2
+        },
+        "standing_heat_classifier_5fold_cv": {
+          "f1": 0.6889,
+          "accuracy": 0.7021,
+          "positive_rate_standing_ge_2": 0.4787
+        },
+        "housing_comparison_indoor_vs_outdoor": {
+          "Indoor_Freestall": {
+            "n_events": 46,
+            "duration_h_mean": 9.61,
+            "total_mounts_mean": 17.26,
+            "standing_mounts_s_mean": 3.57,
+            "intensity_mounts_per_h": 1.61
+          },
+          "Outdoor_Pack": {
+            "n_events": 48,
+            "duration_h_mean": 12.73,
+            "total_mounts_mean": 42.58,
+            "standing_mounts_s_mean": 6.4,
+            "intensity_mounts_per_h": 3.52
+          }
+        },
+        "gait_soundness_vs_lameness_effect": {
+          "Sound_Gait_GS_1_2": {
+            "n_events": 50,
+            "standing_mounts_s_mean": 6.08,
+            "total_mounts_mean": 30.78,
+            "duration_h_mean": 10.92
+          },
+          "Lame_Gait_GS_3_5": {
+            "n_events": 44,
+            "standing_mounts_s_mean": 3.8,
+            "total_mounts_mean": 29.52,
+            "duration_h_mean": 11.52
+          },
+          "standing_mount_reduction_in_lame_pct": 37.6
+        },
+        "social_synchronization_sag_effect": {
+          "Single_Cow_In_Heat": {
+            "n_events": 37,
+            "duration_h_mean": 10.43,
+            "total_mounts_mean": 24.43,
+            "intensity_mounts_per_h": 2.35
+          },
+          "Multiple_Cows_In_Heat_SAG": {
+            "n_events": 32,
+            "duration_h_mean": 12.84,
+            "total_mounts_mean": 44.12,
+            "intensity_mounts_per_h": 3.53
+          }
+        },
+        "circadian_estrus_onset": {
+          "night_onset_19h_to_07h_count": 58,
+          "day_onset_07h_to_19h_count": 36,
+          "night_onset_fraction": 0.617
+        },
+        "is_synthetic": 0
+      },
+      "data4_eartag_temperature_step_monitoring": {
+        "available": true,
+        "dataset": "Full 3-Sheet Electronic Ear-Tag Temperature & Step Estrus Monitoring (2.66M rows + 4-Page PDF Labels)",
+        "sheets_scanned": {
+          "sheet1": 1048575,
+          "sheet2": 1048575,
+          "sheet3": 566494
+        },
+        "raw_rows_streamed": 2663644,
+        "n_animal_days": 7825,
+        "n_animals_streamed": 409,
+        "n_pdf_labeled_animals_matched": 333,
+        "total_pdf_schedule_entries": 521,
+        "n_confirmed_peri_estrus_days": 1102,
+        "n_confirmed_events_matched": 365,
+        "output_csv": "data\\real_data4_eartag_daily.csv",
+        "eartag_estrus_classifier_5fold_cow_cv": {
+          "model_type": "HistGradientBoostingClassifier (5-Fold Animal-Grouped CV on 100% PDF-Labeled Events)",
+          "n_eval_animal_days": 2456,
+          "n_confirmed_estrus_events_pos": 358,
+          "n_diestrus_baseline_days_neg": 2098,
+          "optimal_threshold": 0.75,
+          "f1": 0.7845,
+          "pr_auc": 0.8605,
+          "roc_auc": 0.9544,
+          "accuracy": 0.941,
+          "precision": 0.8381,
+          "recall": 0.7374
+        },
+        "peri_estrus_vs_baseline": {
+          "event_peak_steps_mean": 17067.1,
+          "baseline_steps_mean": 13286.7,
+          "event_peak_steps_ratio_mean": 1.589,
+          "event_peak_temp_q90_c_mean": 35.04,
+          "baseline_temp_q90_c_mean": 32.77,
+          "event_peak_temp_q90_diff_c": 1.55,
+          "top_matched_events": [
+            {
+              "animal_id": "4761",
+              "estrus_date": "2025-05-26",
+              "session": "PM_15_16",
+              "peak_daily_steps": 180.0,
+              "peak_steps_ratio": 8.0,
+              "peak_temp_q90_c": 25.16,
+              "peak_temp_max_c": 25.65,
+              "peak_temp_q90_diff_c": 0.12
+            },
+            {
+              "animal_id": "3901",
+              "estrus_date": "2025-02-02",
+              "session": "AM_08_09",
+              "peak_daily_steps": 48130.0,
+              "peak_steps_ratio": 8.0,
+              "peak_temp_q90_c": 36.56,
+              "peak_temp_max_c": 37.2,
+              "peak_temp_q90_diff_c": 0.4
+            },
+            {
+              "animal_id": "4223",
+              "estrus_date": "2025-02-02",
+              "session": "AM_08_09",
+              "peak_daily_steps": 46075.0,
+              "peak_steps_ratio": 8.0,
+              "peak_temp_q90_c": 37.34,
+              "peak_temp_max_c": 38.02,
+              "peak_temp_q90_diff_c": 0.45
+            },
+            {
+              "animal_id": "2889",
+              "estrus_date": "2024-11-12",
+              "session": "AM_08_09",
+              "peak_daily_steps": 15815.0,
+              "peak_steps_ratio": 8.0,
+              "peak_temp_q90_c": 32.96,
+              "peak_temp_max_c": 37.99,
+              "peak_temp_q90_diff_c": 1.83
+            },
+            {
+              "animal_id": "4392",
+              "estrus_date": "2025-04-14",
+              "session": "PM_15_16",
+              "peak_daily_steps": 7145.0,
+              "peak_steps_ratio": 8.0,
+              "peak_temp_q90_c": 42.65,
+              "peak_temp_max_c": 48.1,
+              "peak_temp_q90_diff_c": -1.54
+            },
+            {
+              "animal_id": "849",
+              "estrus_date": "2025-06-24",
+              "session": "PM_15_16",
+              "peak_daily_steps": 870.0,
+              "peak_steps_ratio": 8.0,
+              "peak_temp_q90_c": 25.2,
+              "peak_temp_max_c": 25.2,
+              "peak_temp_q90_diff_c": -1.66
+            },
+            {
+              "animal_id": "3397",
+              "estrus_date": "2025-06-03",
+              "session": "PM_15_16",
+              "peak_daily_steps": 440.0,
+              "peak_steps_ratio": 5.029,
+              "peak_temp_q90_c": 25.06,
+              "peak_temp_max_c": 25.28,
+              "peak_temp_q90_diff_c": 0.06
+            },
+            {
+              "animal_id": "4357",
+              "estrus_date": "2025-04-21",
+              "session": "PM_15_16",
+              "peak_daily_steps": 9160.0,
+              "peak_steps_ratio": 4.044,
+              "peak_temp_q90_c": 33.78,
+              "peak_temp_max_c": 34.95,
+              "peak_temp_q90_diff_c": -0.56
+            },
+            {
+              "animal_id": "1570",
+              "estrus_date": "2024-12-10",
+              "session": "AM_08_09",
+              "peak_daily_steps": 13385.0,
+              "peak_steps_ratio": 3.965,
+              "peak_temp_q90_c": 30.88,
+              "peak_temp_max_c": 35.5,
+              "peak_temp_q90_diff_c": 0.46
+            },
+            {
+              "animal_id": "4713",
+              "estrus_date": "2025-05-26",
+              "session": "AM_08_09",
+              "peak_daily_steps": 1095.0,
+              "peak_steps_ratio": 3.776,
+              "peak_temp_q90_c": 26.09,
+              "peak_temp_max_c": 26.62,
+              "peak_temp_q90_diff_c": 0.29
+            },
+            {
+              "animal_id": "1570",
+              "estrus_date": "2025-05-10",
+              "session": "PM_15_16",
+              "peak_daily_steps": 12115.0,
+              "peak_steps_ratio": 3.18,
+              "peak_temp_q90_c": 36.76,
+              "peak_temp_max_c": 37.56,
+              "peak_temp_q90_diff_c": 4.95
+            },
+            {
+              "animal_id": "3945",
+              "estrus_date": "2025-05-07",
+              "session": "PM_15_16",
+              "peak_daily_steps": 365.0,
+              "peak_steps_ratio": 3.042,
+              "peak_temp_q90_c": 25.0,
+              "peak_temp_max_c": 25.0,
+              "peak_temp_q90_diff_c": 0.0
+            },
+            {
+              "animal_id": "3937",
+              "estrus_date": "2025-04-21",
+              "session": "PM_15_16",
+              "peak_daily_steps": 13475.0,
+              "peak_steps_ratio": 3.0,
+              "peak_temp_q90_c": 34.37,
+              "peak_temp_max_c": 35.58,
+              "peak_temp_q90_diff_c": -0.83
+            },
+            {
+              "animal_id": "3289",
+              "estrus_date": "2025-05-24",
+              "session": "PM_15_16",
+              "peak_daily_steps": 11760.0,
+              "peak_steps_ratio": 2.707,
+              "peak_temp_q90_c": 34.06,
+              "peak_temp_max_c": 35.07,
+              "peak_temp_q90_diff_c": 4.28
+            },
+            {
+              "animal_id": "3930",
+              "estrus_date": "2025-05-30",
+              "session": "AM_08_09",
+              "peak_daily_steps": 49155.0,
+              "peak_steps_ratio": 2.666,
+              "peak_temp_q90_c": 36.71,
+              "peak_temp_max_c": 36.71,
+              "peak_temp_q90_diff_c": 0.7
+            }
+          ]
+        },
+        "is_synthetic": 0
+      },
+      "data4_supplementary_figures_priors": {
+        "available": true,
+        "source_pdf": "data4/Expression of estrus in dairy cows phenotyping, ge/SupplementaryFigures.pdf",
+        "cohort": "Holstein dairy cows (>50% Holstein), Summer 2022, Technician 1",
+        "supplementary_figure_1_conception_vs_activity_strength": {
+          "x_axis": "Estrous activity strength at insemination (0 to 50)",
+          "strata": {
+            "Lactation_1_Sexed_Semen": {
+              "breeding_1_prob_range_pct": [
+                46.0,
+                60.0
+              ],
+              "breeding_2_prob_range_pct": [
+                30.0,
+                46.0
+              ],
+              "breeding_3_prob_range_pct": [
+                25.0,
+                51.0
+              ]
+            },
+            "Lactation_2_Sexed_Semen": {
+              "breeding_1_prob_range_pct": [
+                38.0,
+                50.0
+              ],
+              "breeding_2_prob_range_pct": [
+                23.0,
+                39.0
+              ],
+              "breeding_3_prob_range_pct": [
+                20.0,
+                48.0
+              ]
+            },
+            "Lactation_3plus_Conventional_Semen": {
+              "breeding_1_prob_range_pct": [
+                44.0,
+                57.0
+              ],
+              "breeding_2_prob_range_pct": [
+                38.0,
+                56.0
+              ],
+              "breeding_3_prob_range_pct": [
+                32.0,
+                58.0
+              ]
+            },
+            "Lactation_3plus_Beef_Semen": {
+              "breeding_1_prob_range_pct": [
+                36.0,
+                49.0
+              ],
+              "breeding_2_prob_range_pct": [
+                33.0,
+                50.0
+              ],
+              "breeding_3_prob_range_pct": [
+                26.0,
+                52.0
+              ]
+            }
+          },
+          "non_linear_saturation_activity_strength": 35.0
+        },
+        "supplementary_figure_2_conception_vs_rumination_strength": {
+          "x_axis": "Estrous rumination strength at insemination (0 to 20)",
+          "monotonic_positive_effect": true,
+          "breeding_1_gain_pct_from_0_to_20": 18.5
+        },
+        "supplementary_figure_3_daily_heritability_dim_11_to_110": {
+          "dim_range": [
+            11,
+            110
+          ],
+          "window_days": 21,
+          "estrus_duration_h2": {
+            "dim_20": 0.14,
+            "dim_35_peak": 0.16,
+            "dim_70_trough": 0.06,
+            "dim_100": 0.09
+          },
+          "activity_strength_h2": {
+            "dim_20_peak": 0.18,
+            "dim_35": 0.16,
+            "dim_70_trough": 0.06,
+            "dim_100": 0.09
+          },
+          "rumination_strength_h2": {
+            "dim_20": 0.15,
+            "dim_32_peak": 0.18,
+            "dim_70_trough": 0.05,
+            "dim_100": 0.08
+          }
+        }
+      }
+    },
+    "behaviour": {
+      "source": "real db-cow-walking labeled CSV clips + synthetic_imu_clips_441.csv",
+      "n_clips": 332,
+      "n_clips_with_standing": 391,
+      "n_cows": 10,
+      "classes": [
+        "Grazing",
+        "Resting",
+        "Walking"
+      ],
+      "group_cv_folds": 5,
+      "group_cv_accuracy": 0.9397590361445783,
+      "group_cv_macro_f1": 0.9248424842484249,
+      "fold_macro_f1_mean": 0.9308372296251701,
+      "fold_macro_f1_std": 0.05690607885177748,
+      "fold_accuracy_mean": 0.9406305770204222,
+      "fold_accuracy_std": 0.030192693663213775,
+      "with_standing_4class": {
+        "classes": [
+          "Grazing",
+          "Resting",
+          "Standing",
+          "Walking"
+        ],
+        "n_clips": 391,
+        "group_cv_accuracy": 0.9156010230179028,
+        "group_cv_macro_f1": 0.8442154010549852
+      },
+      "window_5s_50samples_3class": {
+        "n_windows": 1083,
+        "group_cv_accuracy": 0.9076638965835642,
+        "group_cv_macro_f1": 0.8652849251528741
+      },
+      "synthetic_imu_441_csv": {
+        "source_csv": "synthetic_imu_clips_441.csv",
+        "n_clips_total": 441,
+        "n_clips_3class": 332,
+        "group_cv_macro_f1_3class": 0.9976503982283127,
+        "group_cv_accuracy_3class": 0.9969879518072289,
+        "group_cv_macro_f1_12class": 0.8653098476627888,
+        "group_cv_accuracy_12class": 0.9501133786848073
+      },
+      "walking_pattern_analysis": {
+        "gait_and_posture_by_behaviour": {
+          "Grazing": {
+            "odba_mean": 0.4428,
+            "vedba_mean": 0.2957,
+            "dom_freq_hz": 2.4475,
+            "stride_regularity_autocorr": 0.1644,
+            "world_horiz_acc_mean": 3.5565,
+            "horiz_vert_acc_ratio": 1.5842,
+            "head_pitch_deg_mean": -7.9321,
+            "head_pitch_deg_std": 8.7392,
+            "gyro_mean": 22.6629,
+            "n_clips": 105
+          },
+          "Resting": {
+            "odba_mean": 0.1416,
+            "vedba_mean": 0.0976,
+            "dom_freq_hz": 1.7866,
+            "stride_regularity_autocorr": 0.1721,
+            "world_horiz_acc_mean": 0.432,
+            "horiz_vert_acc_ratio": 2.7751,
+            "head_pitch_deg_mean": -6.0486,
+            "head_pitch_deg_std": 4.1517,
+            "gyro_mean": 22.463,
+            "n_clips": 10
+          },
+          "Standing": {
+            "odba_mean": 0.1339,
+            "vedba_mean": 0.0922,
+            "dom_freq_hz": 2.1669,
+            "stride_regularity_autocorr": 0.1077,
+            "world_horiz_acc_mean": 0.7362,
+            "horiz_vert_acc_ratio": 2.4605,
+            "head_pitch_deg_mean": -9.7936,
+            "head_pitch_deg_std": 3.1572,
+            "gyro_mean": 21.6565,
+            "n_clips": 59
+          },
+          "Walking": {
+            "odba_mean": 0.3004,
+            "vedba_mean": 0.2023,
+            "dom_freq_hz": 1.9717,
+            "stride_regularity_autocorr": 0.2998,
+            "world_horiz_acc_mean": 2.9673,
+            "horiz_vert_acc_ratio": 1.7718,
+            "head_pitch_deg_mean": -5.0867,
+            "head_pitch_deg_std": 5.0709,
+            "gyro_mean": 22.5895,
+            "n_clips": 217
+          }
+        },
+        "per_cow_walking_gait_profile": {
+          "1217": {
+            "n_walking_clips": 9,
+            "odba_mean": 0.2475,
+            "dom_freq_hz": 1.4174,
+            "stride_regularity": 0.3381,
+            "head_pitch_deg": -19.27
+          },
+          "1219": {
+            "n_walking_clips": 36,
+            "odba_mean": 0.3546,
+            "dom_freq_hz": 2.4325,
+            "stride_regularity": 0.2727,
+            "head_pitch_deg": 13.06
+          },
+          "1319": {
+            "n_walking_clips": 16,
+            "odba_mean": 0.2724,
+            "dom_freq_hz": 2.0014,
+            "stride_regularity": 0.3094,
+            "head_pitch_deg": -17.37
+          },
+          "2016": {
+            "n_walking_clips": 18,
+            "odba_mean": 0.2771,
+            "dom_freq_hz": 1.2551,
+            "stride_regularity": 0.3558,
+            "head_pitch_deg": 5.62
+          },
+          "3120": {
+            "n_walking_clips": 26,
+            "odba_mean": 0.2679,
+            "dom_freq_hz": 1.6569,
+            "stride_regularity": 0.3545,
+            "head_pitch_deg": 18.54
+          },
+          "3321": {
+            "n_walking_clips": 17,
+            "odba_mean": 0.2684,
+            "dom_freq_hz": 1.7034,
+            "stride_regularity": 0.2435,
+            "head_pitch_deg": -12.16
+          },
+          "4119": {
+            "n_walking_clips": 29,
+            "odba_mean": 0.366,
+            "dom_freq_hz": 2.1239,
+            "stride_regularity": 0.2882,
+            "head_pitch_deg": -22.9
+          },
+          "4821": {
+            "n_walking_clips": 33,
+            "odba_mean": 0.2961,
+            "dom_freq_hz": 2.3845,
+            "stride_regularity": 0.2399,
+            "head_pitch_deg": -24.45
+          },
+          "6019": {
+            "n_walking_clips": 10,
+            "odba_mean": 0.3306,
+            "dom_freq_hz": 2.1097,
+            "stride_regularity": 0.3123,
+            "head_pitch_deg": -12.9
+          },
+          "6319": {
+            "n_walking_clips": 23,
+            "odba_mean": 0.2447,
+            "dom_freq_hz": 1.7176,
+            "stride_regularity": 0.3518,
+            "head_pitch_deg": 4.37
+          }
+        }
+      },
+      "acceptance_target_macro_f1": 0.85,
+      "acceptance_met": true,
+      "data2_precision_beef": {
+        "available": true,
+        "dataset": "Precision Beef (Zenodo 4064802) - 10 Hz Afimilk Collar + RumiWatch Halter",
+        "n_animals_labeled": 17,
+        "n_windows_60s": 404,
+        "window_duration_s": 60.0,
+        "class_counts": {
+          "Other": 203,
+          "Ruminating": 158,
+          "Eating": 43
+        },
+        "detailed_state_counts": {
+          "Ruminating": 166,
+          "Other_Walking": 121,
+          "Other_Resting": 102,
+          "Eating": 45
+        },
+        "group_cv_5fold": {
+          "hgb_macro_f1": 0.8793,
+          "hgb_accuracy": 0.9084,
+          "rf_macro_f1": 0.8722,
+          "rf_accuracy": 0.9134
+        },
+        "official_test_split_cows_04_10_11": {
+          "test_animals": [
+            4,
+            10,
+            11
+          ],
+          "n_train_windows": 330,
+          "n_test_windows": 74,
+          "hgb_macro_f1": 0.9786,
+          "hgb_accuracy": 0.9865,
+          "rf_macro_f1": 0.9786,
+          "rf_accuracy": 0.9865,
+          "per_class_f1": {
+            "Eating": 0.963,
+            "Ruminating": 0.973,
+            "Other": 1.0
+          }
+        },
+        "unlabeled_animal_18_inference": {
+          "animal_id": 18,
+          "n_windows_scored": 30,
+          "predicted_counts": {
+            "Other": 20,
+            "Ruminating": 8,
+            "Eating": 2
+          },
+          "predicted_fractions": {
+            "Other": 0.6667,
+            "Ruminating": 0.2667,
+            "Eating": 0.0667
+          },
+          "other_subclassified": {
+            "Walking_Locomotion": 16,
+            "Resting_Standing": 4
+          },
+          "mean_confidence": 0.9349
+        },
+        "class_biomechanical_profiles": {
+          "Eating": {
+            "n_windows": 45,
+            "odba_g_mean": 0.4312,
+            "vedba_g_mean": 0.2914,
+            "sum_diff_g_mean": 0.1117,
+            "pitch_deg_mean": -12.67,
+            "pitch_dev_deg_mean": -14.11,
+            "rumination_band_frac": 0.0292,
+            "eating_low_band_frac": 0.3638,
+            "walking_band_frac": 0.0603,
+            "bolus_pause_sub10s_cv": 0.3908
+          },
+          "Ruminating": {
+            "n_windows": 166,
+            "odba_g_mean": 0.0943,
+            "vedba_g_mean": 0.0651,
+            "sum_diff_g_mean": 0.0619,
+            "pitch_deg_mean": 6.69,
+            "pitch_dev_deg_mean": 2.5,
+            "rumination_band_frac": 0.0563,
+            "eating_low_band_frac": 0.2273,
+            "walking_band_frac": 0.2518,
+            "bolus_pause_sub10s_cv": 0.2014
+          },
+          "Other": {
+            "n_windows": 223,
+            "odba_g_mean": 0.1816,
+            "vedba_g_mean": 0.1265,
+            "sum_diff_g_mean": 0.036,
+            "pitch_deg_mean": 3.43,
+            "pitch_dev_deg_mean": 3.5,
+            "rumination_band_frac": 0.0365,
+            "eating_low_band_frac": 0.3171,
+            "walking_band_frac": 0.078,
+            "bolus_pause_sub10s_cv": 0.4744
+          }
+        },
+        "top_10_feature_importances": {
+          "active_jerk_frac": 0.1681,
+          "sum_diff_mean": 0.1201,
+          "sub10s_std_min": 0.091,
+          "mag_std": 0.0785,
+          "sum_diff_std": 0.0596,
+          "zero_cross_y": 0.0549,
+          "y_iqr": 0.049,
+          "sub10s_std_max": 0.0478,
+          "y_std": 0.0337,
+          "x_dev_cow": 0.0295
+        }
+      },
+      "data2_real_daily_telemetry": {
+        "available": true,
+        "output_csv": "data\\real_data2_daily.csv",
+        "n_real_cow_days": 87,
+        "n_animals": 18,
+        "mean_daily_rumination_min": 502.1,
+        "mean_daily_eating_min": 165.8,
+        "mean_daily_lying_min": 329.1,
+        "mean_daily_walking_min": 443.0,
+        "mean_activity_index": 756.5,
+        "is_synthetic": 0
+      },
+      "data3_jerk_telemetry": {
+        "available": true,
+        "source_file": "data3/Preprocessed_Final.csv",
+        "output_windows_csv": "data\\real_data3_windows.csv",
+        "total_samples": 12654,
+        "start_timestamp": "2019-11-14 23:59:37",
+        "end_timestamp": "2019-11-15 05:16:14",
+        "duration_hours": 5.28,
+        "median_sampling_interval_s": 1.0,
+        "quantization_step_g": 0.00390625,
+        "non_zero_jerk_fraction": 0.3239,
+        "directional_energy_share": {
+          "x_longitudinal_share": 0.2099,
+          "y_lateral_share": 0.255,
+          "z_vertical_share": 0.5351
+        },
+        "n_windows_5min": 65,
+        "overnight_regime_counts": {
+          "Ruminating_HeadBob": 38,
+          "Standing_Restless_Bout": 12,
+          "Resting_Lying": 10,
+          "Micro_Posture_Shift": 5
+        },
+        "overnight_regime_fractions": {
+          "Ruminating_HeadBob": 0.5846,
+          "Standing_Restless_Bout": 0.1846,
+          "Resting_Lying": 0.1538,
+          "Micro_Posture_Shift": 0.0769
+        },
+        "mean_restlessness_index": 0.4959,
+        "peak_restlessness_window": "2019-11-15 02:00:00",
+        "hourly_profile": [
+          {
+            "hour": "2019-11-14 23:00:00",
+            "samples": 13,
+            "mean_sum_diff_g": 0.004207,
+            "cumulative_jerk_g": 0.0547,
+            "active_seconds_frac": 0.4615,
+            "vertical_z_share": 0.4286,
+            "lateral_xy_share": 0.5714
+          },
+          {
+            "hour": "2019-11-15 00:00:00",
+            "samples": 2528,
+            "mean_sum_diff_g": 0.003242,
+            "cumulative_jerk_g": 8.1953,
+            "active_seconds_frac": 0.3157,
+            "vertical_z_share": 0.469,
+            "lateral_xy_share": 0.531
+          },
+          {
+            "hour": "2019-11-15 01:00:00",
+            "samples": 2544,
+            "mean_sum_diff_g": 0.003945,
+            "cumulative_jerk_g": 10.0352,
+            "active_seconds_frac": 0.3447,
+            "vertical_z_share": 0.5274,
+            "lateral_xy_share": 0.4726
+          },
+          {
+            "hour": "2019-11-15 02:00:00",
+            "samples": 2087,
+            "mean_sum_diff_g": 0.003625,
+            "cumulative_jerk_g": 7.5664,
+            "active_seconds_frac": 0.299,
+            "vertical_z_share": 0.6076,
+            "lateral_xy_share": 0.3924
+          },
+          {
+            "hour": "2019-11-15 03:00:00",
+            "samples": 2481,
+            "mean_sum_diff_g": 0.003968,
+            "cumulative_jerk_g": 9.8438,
+            "active_seconds_frac": 0.3362,
+            "vertical_z_share": 0.5532,
+            "lateral_xy_share": 0.4468
+          },
+          {
+            "hour": "2019-11-15 04:00:00",
+            "samples": 2352,
+            "mean_sum_diff_g": 0.003657,
+            "cumulative_jerk_g": 8.6016,
+            "active_seconds_frac": 0.3176,
+            "vertical_z_share": 0.5223,
+            "lateral_xy_share": 0.4777
+          },
+          {
+            "hour": "2019-11-15 05:00:00",
+            "samples": 649,
+            "mean_sum_diff_g": 0.003828,
+            "cumulative_jerk_g": 2.4844,
+            "active_seconds_frac": 0.3282,
+            "vertical_z_share": 0.5377,
+            "lateral_xy_share": 0.4623
+          }
+        ],
+        "is_synthetic": 0
+      }
+    },
+    "conception": {
+      "status": "trained",
+      "source": "synthetic PRD 300-cow inseminations.csv + causal daily ratios + estrus predictions",
+      "n_inseminations": 830,
+      "n_cows": 300,
+      "features_used": [
+        "estrus_activity_strength",
+        "estrus_rumination_strength",
+        "estrus_duration_h",
+        "parity",
+        "dim",
+        "silent_heat",
+        "semen_type",
+        "technician"
+      ],
+      "conception_rate": 0.3457831325301205,
+      "base_rate_brier": 0.22621715778777762,
+      "logistic_regression": {
+        "cv_brier": 0.2228427683053311,
+        "cv_brier_fold_mean": 0.22284276830533106,
+        "cv_brier_fold_std": 0.0014545464852851772,
+        "cv_auc": 0.569092857463697,
+        "cv_auc_fold_mean": 0.5665790522036047,
+        "cv_auc_fold_std": 0.008129133528555018,
+        "bootstrap_95ci_brier": {
+          "mean": 0.2228734831723071,
+          "std": 0.006413329014800105,
+          "ci95_low": 0.2109309512179029,
+          "ci95_high": 0.23480048556381905
+        },
+        "reliability_curve": {
+          "n_bins": 5,
+          "mean_predicted_prob": [
+            0.2758,
+            0.3264,
+            0.3587,
+            0.3877,
+            0.432
+          ],
+          "observed_fraction_positive": [
+            0.247,
+            0.3313,
+            0.3494,
+            0.3855,
+            0.4157
+          ],
+          "bin_counts": [
+            166,
+            166,
+            166,
+            166,
+            166
+          ]
+        }
+      },
+      "gradient_boosting": {
+        "cv_brier": 0.22304837580573011,
+        "cv_brier_fold_mean": 0.22304837580573006,
+        "cv_brier_fold_std": 0.0017773309830606946,
+        "cv_auc": 0.5732060240886545,
+        "cv_auc_fold_mean": 0.5748455222734681,
+        "cv_auc_fold_std": 0.023892919688102227,
+        "bootstrap_95ci_brier": {
+          "mean": 0.22308559962082633,
+          "std": 0.006138234227270088,
+          "ci95_low": 0.21252961963698416,
+          "ci95_high": 0.23469565579902452
+        },
+        "reliability_curve": {
+          "n_bins": 5,
+          "mean_predicted_prob": [
+            0.2942,
+            0.3362,
+            0.3555,
+            0.3745,
+            0.4032
+          ],
+          "observed_fraction_positive": [
+            0.247,
+            0.3012,
+            0.3855,
+            0.3976,
+            0.3976
+          ],
+          "bin_counts": [
+            166,
+            166,
+            166,
+            166,
+            166
+          ]
+        }
+      },
+      "simulator_true_prob_oracle": {
+        "brier": 0.22057297669879516,
+        "auc": 0.5950231325517675
+      },
+      "held_out_test": {
+        "test_rows": 162,
+        "test_base_rate_brier": 0.22805212620027435,
+        "logistic_brier": 0.22479429065834816,
+        "logistic_auc": 0.5781119465329991,
+        "boosting_brier": 0.22530256774343205,
+        "boosting_auc": 0.562406015037594
+      },
+      "acceptance": {
+        "target_brier_below": 0.22621715778777762,
+        "logistic_met": true,
+        "boosting_met": true,
+        "acceptance_met": true
+      },
+      "is_synthetic": 1
+    },
+    "lactation": {
+      "status": "trained",
+      "source": "synthetic PRD 300-cow daily.csv + cows.csv",
+      "n_cows": 300,
+      "test_cows": 60,
+      "test_rows_dim_61_305": 14700,
+      "mae_kg": 1.6161172609272287,
+      "mape_pct": 4.804202592361538,
+      "remaining_yield_error_pct": 3.134080575618061,
+      "mae_reduction_vs_parity_curve_pct": 55.35118760780804,
+      "cv_5fold": {
+        "mae_kg_mean": 1.4994433722568004,
+        "mae_kg_std": 0.036381787813192304,
+        "remaining_yield_error_pct_mean": 2.5246631252764806,
+        "remaining_yield_error_pct_std": 0.2245174484528271
+      },
+      "bootstrap_95ci": {
+        "mae_kg": {
+          "mean": 1.6201219460043053,
+          "std": 0.06802315354397873,
+          "ci95_low": 1.513897221910722,
+          "ci95_high": 1.7456598381136923
+        },
+        "remaining_yield_error_pct": {
+          "mean": 3.130196191934947,
+          "std": 0.19891402498686458,
+          "ci95_low": 2.7466362947913683,
+          "ci95_high": 3.5106875557110775
+        }
+      },
+      "baselines": {
+        "parity_mean_curve": {
+          "mae_kg": 3.6196198159345676,
+          "mape_pct": 10.69075630167071,
+          "remaining_yield_error_pct": 9.903934046416904
+        },
+        "free_wood_fit_5_60": {
+          "mae_kg": 3.888912905038799,
+          "mape_pct": 11.853821578267903,
+          "remaining_yield_error_pct": 10.332489194158553
+        },
+        "scaled_parity_curve_uncorrected": {
+          "mae_kg": 1.7288566293809786,
+          "mape_pct": 5.196472527443753,
+          "remaining_yield_error_pct": 3.4735797786064087
+        }
+      },
+      "acceptance": {
+        "remaining_yield_error_target_pct": 5.0,
+        "mae_reduction_target_pct": 30.0,
+        "acceptance_met": true
+      },
+      "is_synthetic": 1
+    }
+  },
+  "limitations": [
+    "Synthetic 300-cow and 10-cow datasets validate the pipeline and model calibration; they are not evidence of real farm accuracy.",
+    "Behaviour classification is validated on real 10 Hz collar IMU clips (db-cow-walking-main) plus synthetic IMU summaries.",
+    "Camera images in Wagyu&Angus are inventoried in reports/data_inventory.json and remain out of scope for v1."
+  ]
+}

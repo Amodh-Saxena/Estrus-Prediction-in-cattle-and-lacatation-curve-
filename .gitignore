@@ -1,0 +1,25 @@
+# Raw datasets (>100MB / multi-GB sensor data)
+data2/
+data3/
+data4/
+db-cow-walking-main/
+Wagyu&Angus/
+
+# Models and predictions (rebuilt via make train / make predict)
+models/*.joblib
+out/
+
+# Compiled and cache artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+.pytest_cache/
+
+# Databases and large binary outputs
+*.db
+*.sqlite3
+data/interim/
+web/data.json

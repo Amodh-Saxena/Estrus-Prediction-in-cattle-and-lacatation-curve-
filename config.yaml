@@ -1,0 +1,141 @@
+project:
+  name: cattle-estrus
+  data_mode: hybrid_300cow_and_10cow
+  seed: 42
+  split_seed: 7
+  data_dir: data
+  database: data/synthetic_cattle.db
+  reports_dir: reports
+  models_dir: models
+  out_dir: out
+
+splits:
+  train_fraction: 0.60
+  validation_fraction: 0.20
+  test_fraction: 0.20
+  cv_folds: 5
+  bootstrap_iterations: 200
+
+simulator:
+  n_cows: 300
+  seed: 42
+  lactation_days: 305
+  parity_probs: [0.38, 0.30, 0.32]
+  holstein_mean: 0.88
+  holstein_sd: 0.10
+  holstein_clip: [0.50, 1.00]
+  wood_a_base: [16.0, 20.0, 23.0]
+  wood_a_milk_coef: 0.08
+  wood_a_noise_sd: 0.06
+  wood_b_base: [0.18, 0.22, 0.24]
+  wood_b_noise_sd: 0.015
+  wood_c_base: [0.0020, 0.0030, 0.0034]
+  wood_c_noise_sd: 0.0002
+  baseline_activity_mean: 100.0
+  baseline_activity_sd: 12.0
+  baseline_activity_g_coef: 4.0
+  baseline_rumination_mean: 480.0
+  baseline_rumination_sd: 35.0
+  baseline_rumination_g_coef: 15.0
+  baseline_lying_mean: 600.0
+  baseline_lying_sd: 50.0
+  baseline_temp_mean: 38.6
+  baseline_temp_sd: 0.15
+  technicians: [T1, T2, T3]
+  parity3_semen_probs: [0.35, 0.40, 0.25]
+  semen_types: [sexed_dairy, conventional_dairy, beef]
+  vwp_range: [50, 74]
+  first_estrus_range: [22, 47]
+  cycle_mean: 21.0
+  cycle_sd: 2.5
+  cycle_clip: [17, 26]
+  silent_heat_prob: 0.15
+  silent_heat_shrink: 0.25
+  silent_insemination_prob: 0.30
+  duration_base: 13.0
+  duration_g_coef: 0.8
+  duration_sd: 3.5
+  duration_clip: [4.0, 24.0]
+  s_act_median_base: 1.9
+  s_act_g_coef: 0.12
+  s_act_sigma: 0.25
+  s_act_clip: [1.0, 4.5]
+  s_rum_base: 0.80
+  s_rum_g_coef: -0.03
+  s_rum_sd: 0.08
+  s_rum_clip: [0.45, 1.0]
+  ar1_activity: [0.5, 5.0]
+  ar1_rumination: [0.5, 18.0]
+  ar1_lying: [0.5, 30.0]
+  ar1_temp: [0.4, 0.08]
+  milk_noise_sd: 0.04
+  pre_heat_activity_frac: 0.15
+  pregnancy_milk_drop_max: 0.12
+  pregnancy_drop_start_days: 120
+  pregnancy_drop_ramp_days: 150
+  missing_sensor_rate: 0.02
+
+features:
+  baseline_window_days: 14
+  baseline_min_periods: 5
+  warmup_dim: 15
+  alert_activity_ratio: 1.5
+  demo_10cow_window_days: 7
+  demo_10cow_min_periods: 3
+  lactation_early_start: 5
+  lactation_early_end: 60
+  lactation_pred_start: 61
+  lactation_pred_end: 305
+
+estrus:
+  feature_window_days: 14
+  train_fraction: 0.60
+  validation_fraction: 0.20
+  threshold_grid_start: 0.05
+  threshold_grid_stop: 0.96
+  threshold_grid_step: 0.01
+  rule_grid_start: 1.10
+  rule_grid_stop: 2.00
+  rule_grid_step: 0.01
+  hist_gradient_boosting:
+    max_depth: 5
+    learning_rate: 0.06
+    max_iter: 300
+    l2_regularization: 1.0
+    validation_fraction: 0.15
+    early_stopping: true
+    random_state: 7
+
+conception:
+  logistic_c: 0.25
+  hist_gradient_boosting:
+    max_depth: 2
+    learning_rate: 0.03
+    max_iter: 80
+    min_samples_leaf: 30
+    l2_regularization: 5.0
+    random_state: 7
+  calibration_method: sigmoid
+  calibration_cv: 5
+
+lactation:
+  hist_gradient_boosting:
+    max_depth: 4
+    learning_rate: 0.05
+    max_iter: 200
+    l2_regularization: 2.0
+    random_state: 7
+  wood_bounds_lower: [5.0, 0.02, 0.0]
+  wood_bounds_upper: [60.0, 0.60, 0.01]
+
+behaviour:
+  sample_rate_hz: 10
+  window_seconds: 5
+  window_samples: 50
+  classes: [Grazing, Walking, Resting]
+  extended_classes: [Grazing, Walking, Resting, Standing]
+  random_forest:
+    n_estimators: 300
+    min_samples_leaf: 2
+    class_weight: balanced_subsample
+    random_state: 7
