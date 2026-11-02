@@ -6,7 +6,100 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import GroupKFold, GroupShuffleSplit
 
-from src.features import estrus_features_prd, compute_parity_curves, PRD_ESTRUS_FEATURES
+from src.features import estrus_features_prd, compute_parity_curves, PRD_ESTRUS_FEATURES, assert_real_only
+
+
+def split_animals(ids, test_frac: float = 0.20, seed: int = 42) -> tuple[np.ndarray, np.ndarray]:
+    """Split animal IDs into development (80%) and held-out test (20%) sets with zero overlap."""
+    unique_ids = np.array(sorted(set(ids)))
+    rng = np.random.default_rng(seed)
+    perm = rng.permutation(unique_ids)
+    n_test = max(1, int(round(len(perm) * test_frac)))
+    test_ids = perm[:n_test]
+    dev_ids = perm[n_test:]
+    assert not (set(dev_ids) & set(test_ids)), "Leakage: Overlap between dev and test animal sets!"
+    return dev_ids, test_ids
+
+
+def repeated_animal_folds(ids, k: int = 5, repeats: int = 3, seed: int = 42):
+    """Repeated GroupKFold generator partitioned strictly by animal ID."""
+    unique_ids = np.array(sorted(set(ids)))
+    for r in range(repeats):
+        perm = np.random.default_rng(seed + r).permutation(unique_ids)
+        chunks = np.array_split(perm, k)
+        for i in range(k):
+            val_chunk = chunks[i]
+            train_chunk = np.concatenate(chunks[:i] + chunks[i + 1:])
+            yield r, i, train_chunk, val_chunk
+
+
+def days_to_nearest_event(df: pd.DataFrame) -> pd.Series:
+    """Distance in days to nearest confirmed estrus event within the same animal."""
+    out = pd.Series(np.inf, index=df.index)
+    for _, g in df.groupby("animal_id", sort=False):
+        ev = g.loc[g["estrus"] == 1, "date"].to_numpy("datetime64[D]")
+        if len(ev):
+            d = g["date"].to_numpy("datetime64[D]")
+            out[g.index] = np.abs(d[:, None] - ev[None, :]).min(axis=1).astype(int)
+    return out
+
+
+def event_metrics(df: pd.DataFrame, alert: np.ndarray, tol: int = 1) -> dict:
+    """PRD v2 event-level detection metrics: recall within tol days of label, and false alerts per 100 animal-days."""
+    d = df.reset_index(drop=True).assign(alert=np.asarray(alert, bool))
+    dist = days_to_nearest_event(d)
+    events = d[d["estrus"] == 1]
+    hits = 0
+    for _, e in events.iterrows():
+        w = d[(d["animal_id"] == e["animal_id"]) & ((d["date"] - e["date"]).abs() <= pd.Timedelta(days=tol))]
+        hits += int(w["alert"].any())
+    false_alerts = int(((d["alert"]) & (dist > tol)).sum())
+    return {
+        "event_recall": float(hits / max(1, len(events))),
+        "n_events": int(len(events)),
+        "false_alerts_per_100": float(100.0 * false_alerts / max(1, len(d))),
+        "n_animal_days": int(len(d)),
+    }
+
+
+def pick_threshold(df: pd.DataFrame, p: np.ndarray, max_fa: float = 5.0, tol: int = 1) -> float:
+    """Select decision threshold maximizing recall subject to false alerts <= max_fa per 100 animal-days.
+    Trained and tuned on validation scores only!
+    """
+    valid_p = p[~np.isnan(p)]
+    if len(valid_p) == 0:
+        return 0.50
+    best_t, best_r = float(np.max(valid_p)) + 1e-9, -1.0
+    quantiles = np.linspace(0.50, 0.999, 200)
+    for t in np.unique(np.quantile(valid_p, quantiles)):
+        m = event_metrics(df, p >= t, tol)
+        if m["false_alerts_per_100"] <= max_fa and m["event_recall"] > best_r:
+            best_t, best_r = float(t), m["event_recall"]
+    return best_t
+
+
+def bootstrap_by_animal(
+    df: pd.DataFrame,
+    alert: np.ndarray,
+    tol: int = 1,
+    reps: int = 1000,
+    seed: int = 42,
+) -> dict[str, tuple[float, float]]:
+    """Cluster bootstrap resampled strictly by animal ID to compute empirical 95% confidence intervals."""
+    d = df.reset_index(drop=True).assign(alert=np.asarray(alert, bool))
+    groups = {a: g for a, g in d.groupby("animal_id", sort=False)}
+    ids = np.array(list(groups))
+    rng = np.random.default_rng(seed)
+    out = []
+    for _ in range(reps):
+        pick = rng.choice(ids, size=len(ids), replace=True)
+        sampled = pd.concat([groups[a].assign(animal_id=f"{a}_{i}") for i, a in enumerate(pick)], ignore_index=True)
+        out.append(event_metrics(sampled, sampled["alert"].to_numpy(), tol))
+    r = pd.DataFrame(out)
+    return {
+        "event_recall": (float(r["event_recall"].quantile(0.025)), float(r["event_recall"].quantile(0.975))),
+        "false_alerts_per_100": (float(r["false_alerts_per_100"].quantile(0.025)), float(r["false_alerts_per_100"].quantile(0.975))),
+    }
 
 
 def cow_train_validation_test(cow_ids, seed: int = 7, train_fraction: float = 0.60):

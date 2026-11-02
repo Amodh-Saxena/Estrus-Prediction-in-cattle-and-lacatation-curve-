@@ -1,24 +1,40 @@
-.PHONY: all simulate database validate train predict test serve
+# CattleSense AI v2 Makefile
+PY=python
+.PHONY: all fetch data audit train web test serve simulate database validate predict
 
-all: simulate validate train predict test
+fetch:
+	$(PY) scripts/fetch_data.py
 
-simulate:
-	python -m src.simulate --n-cows 300 --seed 42
+data:
+	$(PY) -m src.ingest.data4_eartag
+	$(PY) -m src.ingest.smid
+	$(PY) -m src.ingest.data2_collar
 
-database:
-	python build_database.py
-
-validate:
-	python -m src.validate
+audit:
+	$(PY) -m src.audit
 
 train:
-	python -m src.train --config config.yaml
+	$(PY) -m src.train --config config.yaml
 
-predict:
-	python -m src.predict --daily data/synthetic_cattle.db --out out
+web:
+	$(PY) -m src.export_web
 
 test:
-	python -m unittest discover -s tests -v
+	$(PY) -m pytest -q
 
 serve:
-	python web/server.py --port 8080
+	$(PY) web/server.py --port 8080
+
+simulate:
+	$(PY) -m src.simulate --n-cows 300 --seed 42
+
+database:
+	$(PY) simulation/build_database.py
+
+validate:
+	$(PY) -m src.validate
+
+predict:
+	$(PY) -m src.predict --daily data/synthetic_cattle.db --out out
+
+all: fetch data audit train web test

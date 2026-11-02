@@ -14,6 +14,93 @@ import pandas as pd
 SIGNALS_10COW = ["activity_index", "rumination_min", "distance_m", "head_temp_c"]
 WALKING_POSTURE_SIGNALS_10COW = ["walking_frac", "lying_frac"]
 
+# PRD v2 Real Estrus Biosignals (Electronic Ear-Tag Skin Temperature + Steps)
+SIGNALS = ["steps_sum", "temp_mean", "temp_q90"]
+MIN_SCALE = {"steps_sum": 1.0, "temp_mean": 0.05, "temp_q90": 0.05}
+
+FEATURES = [c for s in SIGNALS for c in (f"{s}_ratio", f"{s}_z", f"{s}_z_lag1")] + [
+    "steps_z_max3",
+    "days_since_spike",
+]
+
+
+def assert_real_only(df: pd.DataFrame) -> None:
+    """Enforce PRD v2 FR-A3: reject any synthetic data rows from reaching real-data evaluation."""
+    if "is_synthetic" in df.columns:
+        synth = (df["is_synthetic"] == 1).sum()
+        assert synth == 0, f"DATA INTEGRITY ERROR: Found {synth} synthetic rows in real evaluation table!"
+    if "source" in df.columns:
+        bad_sources = set(df["source"].unique()) & {"simulated_herd", "fixture", "synthetic"}
+        assert not bad_sources, f"DATA INTEGRITY ERROR: Found synthetic sources: {bad_sources}"
+
+
+def to_daily_grid(df: pd.DataFrame) -> pd.DataFrame:
+    """Reindex each animal's time series to a complete daily calendar grid so gaps do not distort baselines."""
+    parts = []
+    for a, g in df.groupby("animal_id", sort=False):
+        d_min = pd.to_datetime(g["date"]).min()
+        d_max = pd.to_datetime(g["date"]).max()
+        full = pd.date_range(d_min, d_max, freq="D")
+        sub = g.copy()
+        sub["date"] = pd.to_datetime(sub["date"])
+        reindexed = sub.set_index("date").reindex(full).rename_axis("date").assign(animal_id=a).reset_index()
+        parts.append(reindexed)
+    out = pd.concat(parts, ignore_index=True)
+    if "estrus" in out.columns:
+        out["estrus"] = out["estrus"].fillna(0).astype(int)
+    return out
+
+
+def _mad(w: np.ndarray) -> float:
+    """Median Absolute Deviation."""
+    med = np.median(w)
+    return float(np.median(np.abs(w - med)))
+
+
+def _days_since(flag: pd.Series) -> pd.Series:
+    """Compute elapsed days since previous positive boolean flag."""
+    out, last = [], None
+    for i, f in enumerate(flag.to_numpy()):
+        out.append(np.nan if last is None else float(i - last))
+        if f:
+            last = i
+    return pd.Series(out, index=flag.index, dtype=float)
+
+
+def add_features(
+    df: pd.DataFrame,
+    window: int = 14,
+    min_periods: int = 5,
+    alert_ratio: float = 1.5,
+) -> pd.DataFrame:
+    """PRD v2 strictly causal feature pipeline: rolling medians and MAD scaling ending at day t-1."""
+    grid_df = to_daily_grid(df).sort_values(["animal_id", "date"]).reset_index(drop=True)
+    g = grid_df.groupby("animal_id", sort=False)
+    for s in SIGNALS:
+        if s not in grid_df.columns:
+            continue
+        past = g[s].transform(lambda x: x.shift(1).rolling(window, min_periods=min_periods).median())
+        mad = g[s].transform(
+            lambda x: x.shift(1).rolling(window, min_periods=min_periods).apply(_mad, raw=True)
+        )
+        scale = np.maximum(1.4826 * mad, MIN_SCALE[s])
+        grid_df[f"{s}_ratio"] = grid_df[s] / past.replace(0, np.nan)
+        grid_df[f"{s}_z"] = (grid_df[s] - past) / scale
+        grid_df[f"{s}_z_lag1"] = g[f"{s}_z"].shift(1)
+
+    if "steps_sum_z" in grid_df.columns:
+        grid_df["steps_z_max3"] = g["steps_sum_z"].transform(lambda x: x.rolling(3, min_periods=1).max())
+    else:
+        grid_df["steps_z_max3"] = 0.0
+
+    if "steps_sum_ratio" in grid_df.columns:
+        spike = (grid_df["steps_sum_ratio"] > alert_ratio).fillna(False)
+        grid_df["days_since_spike"] = spike.groupby(grid_df["animal_id"]).transform(_days_since)
+    else:
+        grid_df["days_since_spike"] = np.nan
+
+    return grid_df
+
 # PRD 300-cow signals (5 signals -> 15 ratio/z/lag features + 5 context/rolling features = 20 features)
 SIGNALS_PRD = ["activity", "rumination_min", "lying_min", "body_temp_c", "milk_kg"]
 

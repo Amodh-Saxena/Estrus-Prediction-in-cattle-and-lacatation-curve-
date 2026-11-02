@@ -47,23 +47,23 @@
     <!-- Quick Stats in Header -->
     <div class="hidden md:flex items-center gap-6 text-xs">
       <div>
-        <div class="text-slate-400">Estrus F1 (Held-Out)</div>
-        <div class="text-sm font-bold text-emerald-400">0.9101 <span class="text-[10px] text-slate-500 font-normal">(&ge;0.85)</span></div>
+        <div class="text-slate-400">Ear-Tag ROC-AUC</div>
+        <div class="text-sm font-bold text-emerald-400"><span data-kpi="estrus_roc_auc">0.9544</span> <span class="text-[10px] text-slate-500 font-normal">(5-Fold CV)</span></div>
       </div>
       <div class="h-6 w-px bg-slate-800"></div>
       <div>
         <div class="text-slate-400">Gait Macro F1</div>
-        <div class="text-sm font-bold text-indigo-400">0.9248 <span class="text-[10px] text-slate-500 font-normal">(&ge;0.85)</span></div>
+        <div class="text-sm font-bold text-indigo-400"><span data-kpi="gait_f1">0.9786</span> <span class="text-[10px] text-slate-500 font-normal">(Test 04,10,11)</span></div>
       </div>
       <div class="h-6 w-px bg-slate-800"></div>
       <div>
-        <div class="text-slate-400">Conception Brier</div>
-        <div class="text-sm font-bold text-amber-400">0.2228 <span class="text-[10px] text-slate-500 font-normal">(&lt;0.2262)</span></div>
+        <div class="text-slate-400">Raw Sensor Rows</div>
+        <div class="text-sm font-bold text-rose-400"><span data-kpi="eartag_rows">2,663,644</span> <span class="text-[10px] text-slate-500 font-normal">(3 Sheets)</span></div>
       </div>
       <div class="h-6 w-px bg-slate-800"></div>
       <div>
-        <div class="text-slate-400">Lactation Error</div>
-        <div class="text-sm font-bold text-sky-400">3.13% <span class="text-[10px] text-slate-500 font-normal">(&le;5.0%)</span></div>
+        <div class="text-slate-400">Smid Estrus R²</div>
+        <div class="text-sm font-bold text-sky-400"><span data-kpi="smid_duration_r2">0.8391</span> <span class="text-[10px] text-slate-500 font-normal">(MAE 1.55h)</span></div>
       </div>
     </div>
   </header>
@@ -81,11 +81,13 @@
       <button onclick="switchTab('walking')" id="nav-walking" class="nav-btn flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 transition">
         <span>🚶</span> Walking Gait &amp; 10Hz IMU
       </button>
-      <button onclick="switchTab('breeding')" id="nav-breeding" class="nav-btn flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 transition">
-        <span>🗓️</span> Breeding Schedule
+      <button onclick="switchTab('breeding')" id="nav-breeding" class="nav-btn flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 transition">
+        <span class="flex items-center gap-3"><span>🗓️</span> Breeding Schedule</span>
+        <span class="text-[9px] bg-purple-500/10 text-purple-400 border border-purple-500/20 px-1.5 py-0.5 rounded font-mono font-bold">SIMULATED</span>
       </button>
-      <button onclick="switchTab('lactation')" id="nav-lactation" class="nav-btn flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 transition">
-        <span>🥛</span> 305-Day Lactation Curve
+      <button onclick="switchTab('lactation')" id="nav-lactation" class="nav-btn flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 transition">
+        <span class="flex items-center gap-3"><span>🥛</span> 305d Lactation</span>
+        <span class="text-[9px] bg-sky-500/10 text-sky-400 border border-sky-500/20 px-1.5 py-0.5 rounded font-mono font-bold">SIMULATED</span>
       </button>
       <button onclick="switchTab('realdata')" id="nav-realdata" class="nav-btn flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 transition">
         <span>📡</span> data2 &amp; data3 Telemetry
@@ -735,6 +737,15 @@
       } catch (err) {
         console.warn('Could not load data.json from relative URL, trying fallback', err);
       }
+      if (appData && appData.kpis) {
+        document.querySelectorAll('[data-kpi]').forEach(el => {
+          const k = appData.kpis[el.dataset.kpi];
+          if (k) {
+            el.textContent = k.display || el.textContent;
+            if (k.source) el.title = k.source;
+          }
+        });
+      }
       populateCowDropdown();
       populateScheduleTable();
       renderAllCharts();
@@ -1142,10 +1153,48 @@
       const baseYield = (parity === 1 ? 9200 : (parity === 2 ? 11100 : 12400));
       const projectedMilk = Math.round(baseYield * (0.95 + 0.1 * Math.random()));
 
-      // Update UI
+      // Update UI with client estimate
       document.getElementById('res-estrus-p').textContent = pEstrus.toFixed(3);
       document.getElementById('res-conc-p').textContent = (pConc * 100).toFixed(1) + '%';
       document.getElementById('res-milk-kg').textContent = projectedMilk.toLocaleString() + ' kg';
+
+      // Asynchronously call production /v1/estrus API (FR-D3)
+      try {
+        const testRows = [];
+        const baseDate = new Date();
+        for (let i = 14; i >= 0; i--) {
+          const d = new Date(baseDate);
+          d.setDate(d.getDate() - i);
+          const mult = (i === 0) ? act : 1.0;
+          testRows.push({
+            animal_id: 'sandbox_cow',
+            date: d.toISOString().slice(0, 10),
+            steps_sum: Math.round(12000.0 * mult),
+            temp_mean: parseFloat((37.5 + (i === 0 && act > 1.4 ? 1.2 : 0.0)).toFixed(2)),
+            temp_q90: parseFloat((38.0 + (i === 0 && act > 1.4 ? 1.4 : 0.0)).toFixed(2))
+          });
+        }
+        fetch('/v1/estrus', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({rows: testRows})
+        }).then(r => r.json()).then(res => {
+          if (res && res.results && res.results.length > 0) {
+            const last = res.results[res.results.length - 1];
+            if (last && typeof last.score === 'number') {
+              document.getElementById('res-estrus-p').textContent = last.score.toFixed(3);
+              const badge = document.getElementById('res-estrus-badge');
+              if (last.alert) {
+                badge.className = 'inline-block text-[11px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+                badge.textContent = `ALERT ACTIVE (p ≥ ${last.threshold})`;
+              } else {
+                badge.className = 'inline-block text-[11px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700';
+                badge.textContent = `NO ALERT (Below ${last.threshold})`;
+              }
+            }
+          }
+        }).catch(err => console.debug('Sandbox API call fallback to client model:', err));
+      } catch (e) {}
 
       const badge = document.getElementById('res-estrus-badge');
       const rec = document.getElementById('res-recommendation');

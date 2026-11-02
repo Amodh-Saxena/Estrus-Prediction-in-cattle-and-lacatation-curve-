@@ -1,0 +1,56 @@
+datasets:
+  data4_eartag:
+    source: "Electronic Ear-Tag Temperature and Estrus Event Records (sow_ear_tag_monitoring_records.xlsx)"
+    licence: "Open Academic Research / CC-BY-4.0"
+    species: "Porcine (Sow / Gilt breeding herd)"
+    sensor_type: "Electronic ear-tag (Skin temperature + 3D step counter)"
+    labels: "Estrus date and AM/PM breeding schedule from estrus_event_labels_and_sow_ids.pdf"
+    n_animals: 409
+    n_records: 2663644
+    is_synthetic: 0
+    allowed_use: [estrus_train, estrus_test, estrus_eval]
+
+  smid_estrus:
+    source: "Smid et al., 2021/2024 indoor versus outdoor cows_26Feb2024.xlsx"
+    licence: "UBC Faculty of Land and Food Systems / Agassiz Research Station open dataset"
+    species: "Bovine (Holstein dairy cows)"
+    location: "UBC Dairy Education & Research Centre, Agassiz, BC, Canada"
+    labels: "SAS-validated estrus duration, mounting events, and standing heat"
+    n_cows: 45
+    n_events: 94
+    is_synthetic: 0
+    allowed_use: [findings, duration_benchmark]
+
+  data2_collar:
+    source: "Zenodo 4064802 (Precision Beef 18-cow 10 Hz Collar + Halter dataset)"
+    licence: "Creative Commons Attribution 4.0 International (CC-BY-4.0)"
+    species: "Bovine (Beef cattle - Easter Howgate Farm, Edinburgh)"
+    sensor_type: "10 Hz Afimilk Neck Collar + RumiWatch Noseband Pressure Halter"
+    labels: "RumiWatch Converter 0: Other, 1: Ruminating, 2: Eating"
+    n_animals: 18
+    is_synthetic: 0
+    allowed_use: [behaviour_train, behaviour_test]
+
+  db_cow_walking:
+    source: "db-cow-walking-main (Collar IMU labelled clips)"
+    licence: "Open research dataset"
+    species: "Bovine (Dairy cattle)"
+    sensor_type: "10 Hz BNO055 Collar IMU (3-axis Accel + Gyro + Quaternion)"
+    labels: "Walking, Grazing, Resting, Standing"
+    is_synthetic: 0
+    allowed_use: [behaviour_benchmark]
+
+  data3_jerk:
+    source: "Preprocessed_Final.csv (~1 Hz 3-axis accelerometer delta stream)"
+    licence: "Research experiment"
+    species: "Bovine (Dairy cow overnight telemetry)"
+    is_synthetic: 0
+    allowed_use: [overnight_restlessness_monitoring, experiments]
+
+  simulated_herd:
+    source: "simulation/generate_data.py"
+    licence: "Internal project simulation"
+    species: "Simulated Holstein Dairy Herd (300 cows, 305 DIM)"
+    is_synthetic: 1
+    allowed_use: [unit_tests, demo, simulation_lab]
+

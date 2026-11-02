@@ -488,6 +488,14 @@ def run_training(config_path: Path | None = None, out_root: Path | None = None, 
     )
     (out_reports / "model_cards.md").write_text(_format_model_cards(report), encoding="utf-8")
     _write_reliability_svg(out_reports / "conception_reliability.svg", conception_metrics)
+
+    # Automatically synchronize web dashboard snapshot (FR-D1)
+    try:
+        from src.export_web import export_web_data
+        export_web_data()
+    except Exception as exc:
+        print(f"Warning: could not export web/data.json: {exc}")
+
     return report
 
 

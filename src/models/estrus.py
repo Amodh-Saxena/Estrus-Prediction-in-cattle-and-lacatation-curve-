@@ -17,11 +17,67 @@ from sklearn.model_selection import GroupKFold
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
-from src.features import PRD_ESTRUS_FEATURES, DEMO_ESTRUS_FEATURES, HOURLY_ENRICHED_FEATURES
-from src.evaluate import cow_bootstrap_ci
+from src.features import PRD_ESTRUS_FEATURES, DEMO_ESTRUS_FEATURES, HOURLY_ENRICHED_FEATURES, FEATURES as V2_FEATURES
+from src.evaluate import cow_bootstrap_ci, repeated_animal_folds
 
 # Backward-compatible export for 10-cow feature list
 FEATURES = DEMO_ESTRUS_FEATURES
+
+# CattleSense v2 Ablation Feature Sets
+FEATURE_SETS = {
+    "activity": [c for c in V2_FEATURES if c.startswith("steps") or c == "days_since_spike"],
+    "temperature": [c for c in V2_FEATURES if c.startswith("temp")],
+    "both": V2_FEATURES,
+}
+
+
+def make_model(name: str, seed: int = 42):
+    """Factory for PRD v2 estrus models."""
+    if name == "logistic":
+        return make_pipeline(
+            SimpleImputer(strategy="median"),
+            StandardScaler(),
+            LogisticRegression(max_iter=2000, class_weight="balanced", random_state=seed),
+        )
+    if name == "gbm":
+        return HistGradientBoostingClassifier(
+            max_depth=3,
+            learning_rate=0.05,
+            max_iter=200,
+            l2_regularization=1.0,
+            min_samples_leaf=40,
+            random_state=seed,
+        )
+    raise ValueError(f"Unknown model name: {name}")
+
+
+def score_model(name: str, model, X: pd.DataFrame, feats: list[str]) -> np.ndarray:
+    """Score model probability predictions."""
+    if name == "rule":
+        if "steps_sum_ratio" in X.columns:
+            return X["steps_sum_ratio"].fillna(1.0).to_numpy(dtype=float)
+        return np.ones(len(X), dtype=float)
+    return model.predict_proba(X[feats])[:, 1]
+
+
+def oof_scores(df: pd.DataFrame, feats: list[str], name: str, cfg: dict) -> np.ndarray:
+    """Compute out-of-fold probability predictions across repeated animal folds."""
+    acc = np.zeros(len(df), dtype=float)
+    cnt = np.zeros(len(df), dtype=float)
+    seed = int(cfg.get("seed", 42))
+    k = int(cfg.get("cv_folds", 5))
+    repeats = int(cfg.get("cv_repeats", 1))
+
+    for _, _, tr, te in repeated_animal_folds(df["animal_id"].unique(), k=k, repeats=repeats, seed=seed):
+        mtr = df["animal_id"].isin(tr).to_numpy()
+        mte = df["animal_id"].isin(te).to_numpy()
+        if name == "rule":
+            model = None
+        else:
+            model = make_model(name, seed).fit(df.loc[mtr, feats], df.loc[mtr, "estrus"])
+        acc[mte] += score_model(name, model, df.loc[mte], feats)
+        cnt[mte] += 1
+    return acc / np.maximum(cnt, 1.0)
 
 
 def new_model(seed: int = 7, hgb_cfg: dict | None = None):
